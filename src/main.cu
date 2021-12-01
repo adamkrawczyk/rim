@@ -25,7 +25,7 @@ void free_mem(float *coeff_ptr, float *yin_ptr, float *yref_ptr,
 }
 void read_data(int *n_ptr, int *len_ptr, float **coeff_ptr, float **yin_ptr,
                float **yref_ptr, float **yout_ptr) {
-  FILE *f = fopen("/home/adam/Documents/pw/rim/src/audiofir_in.dat", "rb");
+  FILE *f = fopen("/home/adam/Documents/pw/rim/helpers/audiofir_in.dat", "rb");
   fread(n_ptr, sizeof(int), 1, f);
   fread(len_ptr, sizeof(int), 1, f);
   alloc_mem(*n_ptr, *len_ptr, coeff_ptr, yin_ptr, yref_ptr, yout_ptr);
@@ -35,7 +35,7 @@ void read_data(int *n_ptr, int *len_ptr, float **coeff_ptr, float **yin_ptr,
   fclose(f);
 }
 void write_data(int len, float *y) {
-  FILE *f = fopen("/home/adam/Documents/pw/rim/src/audiofir_in.dat", "wb");
+  FILE *f = fopen("/home/adam/Documents/pw/rim/helpers/audiofir_out.dat", "wb");
   fwrite(y, sizeof(float), 2 * len, f);
   fclose(f);
 }
