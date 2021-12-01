@@ -7,35 +7,37 @@
 __global__ static void audiofir_kernel(float* yout, float* yin, float* coeff,
                                        int n, int len) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
-  if (i < len) {
-    int j;
-    float y_out = 0;
-    for (j = 0; j <= n; j++) {
-      if (i >= j) {
-        y_out += yin[i - j] * coeff[j];
-      }
-    }
-    yout[i] = y_out;
+
+  int j;
+  float y_out = 0;
+  for (j = 0; j <= n; j++) {
+    y_out += yin[i - j] * coeff[j];
   }
+  yout[i] = y_out;
 }
 
 void audiofir::audiofir(float* yout, float* yin, float* coeff, int n, int len,
                         ...) {
   checkCudaErrors(cudaSetDevice(0));
   float *filter, *y_in, *y_out;
+
+  int L = ((len + K - 1) / K) * K;
+
   checkCudaErrors(cudaMalloc(&filter, (n + 1) * sizeof(float)));
-  checkCudaErrors(cudaMalloc(&y_in, (2 * len) * sizeof(float)));
-  checkCudaErrors(cudaMalloc(&y_out, (2 * len) * sizeof(float)));
+  checkCudaErrors(cudaMalloc(&y_in, (2 * (L + n)) * sizeof(float)));
+  checkCudaErrors(cudaMalloc(&y_out, (2 * (L)) * sizeof(float)));
+  checkCudaErrors(cudaMemset((void*)y_in, 0, (2 * (L + n)) * sizeof(float)));
   checkCudaErrors(cudaMemcpy(filter, coeff, (n + 1) * sizeof(float),
                              cudaMemcpyHostToDevice));
   checkCudaErrors(
-      cudaMemcpy(y_in, yin, (2 * len) * sizeof(float), cudaMemcpyHostToDevice));
-
-  cudaEvent_t start, stop;  // pomiar czasu wykonania j?dra
+      cudaMemcpy(y_in + n, yin, (len) * sizeof(float), cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMemcpy((y_in + L + 2 * n), yin + len,
+                             (len) * sizeof(float), cudaMemcpyHostToDevice));
+  cudaEvent_t start, stop;  // pomiar czasu wykonania jadra
   checkCudaErrors(cudaEventCreate(&start));
   checkCudaErrors(cudaEventCreate(&stop));
   checkCudaErrors(cudaEventRecord(start, 0));
-  audiofir_kernel<<<(len + K - 1) / K, K>>>(y_out, y_in, filter, n, len);
+  audiofir_kernel<<<(len + K - 1) / K, K>>>(y_out, y_in + n, filter, n, len);
   checkCudaErrors(cudaGetLastError());
 
   checkCudaErrors(cudaEventRecord(stop, 0));
@@ -46,8 +48,8 @@ void audiofir::audiofir(float* yout, float* yin, float* coeff, int n, int len,
   checkCudaErrors(cudaEventDestroy(stop));
 
   checkCudaErrors(cudaDeviceSynchronize());
-  audiofir_kernel<<<(len + K - 1) / K, K>>>(y_out + len, y_in + len, filter, n,
-                                            len);
+  audiofir_kernel<<<(len + K - 1) / K, K>>>(y_out + len, (y_in + L + 2 * n), filter,
+                                            n, len);
   checkCudaErrors(cudaGetLastError());
   checkCudaErrors(cudaDeviceSynchronize());
 
