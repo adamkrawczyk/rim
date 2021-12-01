@@ -5,14 +5,14 @@
 #include </usr/include/cuda_runtime.h>
 
 // helper functions and utilities to work with CUDA
-#include <helper_functions.h>
 #include <helper_cuda.h>
+#include <helper_functions.h>
+
 #include "/usr/include/device_launch_parameters.h"
 
-namespace audiofir
-{
+namespace audiofir {
 
-void audiofir(float * yout, float * yin, float * coeff, int n, int len, ...);
+void audiofir(float* yout, float* yin, float* coeff, int n, int len, ...);
 
 }  // namespace audiofir
 
